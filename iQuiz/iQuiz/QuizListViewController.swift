@@ -46,4 +46,12 @@ class QuizListViewController: UITableViewController {
         cell.imageView?.image = UIImage(named: quiz.imageName)
         return cell
     }
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "showQuestion",
+           let destination = segue.destination as? QuestionViewController,
+           let indexPath = sender as? IndexPath {
+            destination.quizTitle = quizzes[indexPath.row].title
+        }
+    }
 }
