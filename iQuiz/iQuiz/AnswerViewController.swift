@@ -1,3 +1,10 @@
+//
+//  AnswerViewController.swift
+//  iQuiz
+//
+//  Fixed by Jessica Wang on 5/20/25.
+//
+
 import UIKit
 
 class AnswerViewController: UIViewController {
@@ -84,7 +91,6 @@ class AnswerViewController: UIViewController {
         swipeLeft.direction = .left
         view.addGestureRecognizer(swipeLeft)
         
-        // Add a tooltip to show swipe gestures are available
         let tooltipLabel = UILabel()
         tooltipLabel.translatesAutoresizingMaskIntoConstraints = false
         tooltipLabel.text = "Tip: Swipe right for next question, swipe left to exit quiz"

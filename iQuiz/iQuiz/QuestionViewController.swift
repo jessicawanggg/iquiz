@@ -1,3 +1,10 @@
+//
+//  QuestionViewController.swift
+//  iQuiz
+//
+//  Fixed by Jessica Wang on 5/20/25.
+//
+
 import UIKit
 
 class QuestionViewController: UIViewController {
@@ -88,7 +95,6 @@ class QuestionViewController: UIViewController {
         swipeLeft.direction = .left
         view.addGestureRecognizer(swipeLeft)
         
-        // Add a tooltip to show swipe gestures are available
         let tooltipLabel = UILabel()
         tooltipLabel.translatesAutoresizingMaskIntoConstraints = false
         tooltipLabel.text = "Tip: Swipe right to submit, swipe left to exit quiz"
@@ -110,11 +116,9 @@ class QuestionViewController: UIViewController {
         questionLabel.text = question.text
         progressLabel.text = quizTopic.progress
         
-        // Clear existing buttons
         stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         answerButtons.removeAll()
         
-        // Create new answer buttons
         for (index, answer) in question.answers.enumerated() {
             let button = UIButton(type: .system)
             button.setTitle(answer, for: .normal)

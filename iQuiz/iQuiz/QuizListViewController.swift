@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  QuizListViewController.swift
 //  iQuiz
 //
 //  Created by Jessica Wang on 5/5/25.
@@ -14,80 +14,17 @@ struct Quiz {
     let imageName: String
 }
 
-class QuizListViewController: UITableViewController {
-    
-    let quizzes: [QuizTopic] = [
-        QuizTopic(
-            title: "Mathematics",
-            description: "Test your math skills",
-            imageName: "math",
-            questions: [
-                Question(
-                    text: "What is 2 + 2?",
-                    answers: ["3", "4", "5", "6"],
-                    correctAnswerIndex: 1
-                ),
-                Question(
-                    text: "What is 10 × 5?",
-                    answers: ["40", "45", "50", "55"],
-                    correctAnswerIndex: 2
-                ),
-                Question(
-                    text: "What is 100 ÷ 4?",
-                    answers: ["20", "25", "30", "35"],
-                    correctAnswerIndex: 1
-                )
-            ]
-        ),
-        QuizTopic(
-            title: "Marvel Superheroes",
-            description: "Test your Marvel knowledge",
-            imageName: "marvel",
-            questions: [
-                Question(
-                    text: "What is Iron Man's real name?",
-                    answers: ["Tony Stark", "Steve Rogers", "Bruce Banner", "Peter Parker"],
-                    correctAnswerIndex: 0
-                ),
-                Question(
-                    text: "What is Thor's hammer called?",
-                    answers: ["Stormbreaker", "Mjolnir", "Gungnir", "Vanir"],
-                    correctAnswerIndex: 1
-                ),
-                Question(
-                    text: "What metal is Captain America's shield made of?",
-                    answers: ["Steel", "Adamantium", "Vibranium", "Titanium"],
-                    correctAnswerIndex: 2
-                )
-            ]
-        ),
-        QuizTopic(
-            title: "Science",
-            description: "Explore scientific facts",
-            imageName: "science",
-            questions: [
-                Question(
-                    text: "What is the chemical symbol for gold?",
-                    answers: ["Ag", "Fe", "Au", "Cu"],
-                    correctAnswerIndex: 2
-                ),
-                Question(
-                    text: "What planet is known as the Red Planet?",
-                    answers: ["Venus", "Mars", "Jupiter", "Saturn"],
-                    correctAnswerIndex: 1
-                ),
-                Question(
-                    text: "What is the largest organ in the human body?",
-                    answers: ["Heart", "Brain", "Liver", "Skin"],
-                    correctAnswerIndex: 3
-                )
-            ]
-        )
-    ]
+class QuizListViewController: UITableViewController, SettingsViewControllerDelegate {
+    private var quizzes: [QuizTopic] = []
+    private var refreshTimer: Timer?
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        setupRefreshControl()
+        setupNetworkMonitoring()
+        loadQuizzes()
+        startRefreshTimer()
     }
     
     private func setupUI() {
@@ -97,13 +34,85 @@ class QuizListViewController: UITableViewController {
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "QuizCell")
     }
     
+    private func setupRefreshControl() {
+        refreshControl = UIRefreshControl()
+        refreshControl?.addTarget(self, action: #selector(refreshQuizzes), for: .valueChanged)
+    }
+    
+    private func setupNetworkMonitoring() {
+        NetworkManager.shared.connectionStatusChanged = { [weak self] isConnected in
+            if !isConnected {
+                self?.showNetworkAlert()
+            }
+        }
+    }
+    
+    private func loadQuizzes() {
+        guard NetworkManager.shared.isConnected else {
+            showNetworkAlert()
+            return
+        }
+        
+        NetworkManager.shared.fetchQuizzes(from: SettingsManager.shared.quizURL) { [weak self] result in
+            switch result {
+            case .success(let quizzes):
+                self?.quizzes = quizzes
+                self?.tableView.reloadData()
+                SettingsManager.shared.lastRefreshDate = Date()
+                
+            case .failure(let error):
+                self?.showErrorAlert(message: error.localizedDescription)
+            }
+            self?.refreshControl?.endRefreshing()
+        }
+    }
+    
+    private func startRefreshTimer() {
+        refreshTimer?.invalidate()
+        
+        let interval = SettingsManager.shared.refreshInterval
+        guard interval > 0 else { return }
+        
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            self?.loadQuizzes()
+        }
+    }
+    
+    @objc private func refreshQuizzes() {
+        loadQuizzes()
+    }
+    
     @objc func showSettings() {
-        let alert = UIAlertController(title: "Settings", message: "Settings go here", preferredStyle: .alert)
+        let settingsVC = SettingsViewController()
+        settingsVC.delegate = self
+        navigationController?.pushViewController(settingsVC, animated: true)
+    }
+    
+    private func showNetworkAlert() {
+        let alert = UIAlertController(
+            title: "No Internet Connection",
+            message: "Please check your internet connection and try again.",
+            preferredStyle: .alert
+        )
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
     }
     
-    // MARK: - Table view data source
+    private func showErrorAlert(message: String) {
+        let alert = UIAlertController(
+            title: "Error",
+            message: message,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
+    
+    func settingsViewController(_ controller: SettingsViewController, didUpdateQuizzes quizzes: [QuizTopic]) {
+        self.quizzes = quizzes
+        tableView.reloadData()
+        startRefreshTimer()
+    }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return quizzes.count
@@ -124,8 +133,6 @@ class QuizListViewController: UITableViewController {
         
         return cell
     }
-    
-    // MARK: - Table view delegate
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)

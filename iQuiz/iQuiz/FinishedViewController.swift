@@ -1,3 +1,10 @@
+//
+//  FinishedViewController.swift
+//  iQuiz
+//
+//  Fixed by Jessica Wang on 5/20/25.
+//
+
 import UIKit
 
 class FinishedViewController: UIViewController {
@@ -65,7 +72,6 @@ class FinishedViewController: UIViewController {
         swipeLeft.direction = .left
         view.addGestureRecognizer(swipeLeft)
         
-        // Add a tooltip to show swipe gesture is available
         let tooltipLabel = UILabel()
         tooltipLabel.translatesAutoresizingMaskIntoConstraints = false
         tooltipLabel.text = "Tip: Swipe left to return to topics"
@@ -85,7 +91,6 @@ class FinishedViewController: UIViewController {
         titleLabel.text = quizTopic.performanceDescription
         scoreLabel.text = quizTopic.finalScore
         
-        // Add confetti animation for perfect score
         if quizTopic.performanceDescription == "Perfect!" {
             showConfetti()
         }
